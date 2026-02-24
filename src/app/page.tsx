@@ -1,63 +1,118 @@
-import Image from "next/image";
+/**
+ * ============================================================
+ * Vendral Dashboard – Main Page
+ * ============================================================
+ *
+ * This is the ENTRY POINT of the dashboard. In Next.js App Router,
+ * `page.tsx` in the `app/` folder is the component rendered at "/".
+ *
+ * ARCHITECTURE:
+ * This page is a "shell" that provides the layout structure:
+ *   ┌────┬────────────────────────────────────┐
+ *   │    │  Stats Ribbon (top)                │
+ *   │ S  ├────────────────────────────────────┤
+ *   │ I  │                                    │
+ *   │ D  │  Main Content Area                 │
+ *   │ E  │  (switches based on active tab)    │
+ *   │ B  │                                    │
+ *   │ A  │                                    │
+ *   │ R  │                                    │
+ *   └────┴────────────────────────────────────┘
+ *
+ * The Sidebar controls which "tab" is active, and the main area
+ * renders the corresponding component.
+ *
+ * "use client" is needed because this component uses useState
+ * to track which tab is active.
+ * ============================================================
+ */
 
-export default function Home() {
+"use client";
+
+import React, { useState } from "react";
+import { Sidebar, type NavTab } from "@/components/sidebar";
+import { StatsRibbon } from "@/components/stats-ribbon";
+import { OverviewDashboard } from "@/components/overview-dashboard";
+import { DeviceHealth } from "@/components/device-health";
+import { SalesDashboard } from "@/components/sales-dashboard";
+import { MapView } from "@/components/map-view";
+import { PlanogramView } from "@/components/planogram-view";
+import { SettingsPage } from "@/components/settings-page";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function DashboardPage() {
+  // Track which navigation tab is active
+  const [activeTab, setActiveTab] = useState<NavTab>("overview");
+  // Track sidebar collapsed state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  /**
+   * Render the main content based on the active tab.
+   * Each tab maps to a different dashboard section component.
+   */
+  function renderContent() {
+    switch (activeTab) {
+      case "overview":
+        return <OverviewDashboard />;
+      case "monitoring":
+        return <DeviceHealth />;
+      case "sales":
+        return <SalesDashboard />;
+      case "map":
+        return <MapView />;
+      case "planogram":
+        return <PlanogramView />;
+      case "settings":
+        return <SettingsPage />;
+      default:
+        return <OverviewDashboard />;
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="flex min-h-screen bg-background">
+      {/* ---- Sidebar (fixed left) ---- */}
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+
+      {/* ---- Main Content Area ---- */}
+      {/*
+        The margin-left shifts based on sidebar width.
+        transition-all gives a smooth sliding effect.
+      */}
+      <main
+        className={cn(
+          "flex-1 min-h-screen transition-all duration-300",
+          sidebarCollapsed ? "ml-16" : "ml-60"
+        )}
+      >
+        {/* Content padding */}
+        <div className="p-4 lg:p-6 space-y-4">
+          {/* Stats ribbon at the top (visible on all tabs) */}
+          <StatsRibbon />
+
+          {/*
+            AnimatePresence tracks which component is visible and
+            animates the transition between tabs.
+            The `mode="wait"` ensures the exiting component finishes
+            its animation before the entering one starts.
+          */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15 }}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>
